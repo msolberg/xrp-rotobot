@@ -9,6 +9,7 @@ The repository provides a client-server architecture for controlling the XRP rob
 * **[`usb_control.py`](usb_control.py)**: MicroPython RPC server running on the robot's RP2040 microcontroller. It asynchronously listens on USB serial (`sys.stdin`) for commands and drives the motors, reads the ultrasonic rangefinder/IMU, controls servos, and toggles LEDs.
 * **[`usb_controller.py`](usb_controller.py)**: Host-side Python library providing the `XRPController` client class. It manages serial connectivity (`/dev/ttyACM0`), handshakes on connect, flushes stale buffers, and sends commands with automatic response handling.
 * **[`look_around.py`](look_around.py)**: Example autonomous application combining computer vision (YOLO) with robot motion control via `XRPController`.
+* **[`voice_control.py`](voice_control.py)**: Host-side voice listener that transcribes microphone audio with [Vosk](https://alphacephei.com/vosk/) and maps recognized commands to robot actions (e.g., "Red Light" stops, "Green Light" drives forward) via `XRPController`.
 * **[`follow_person.py`](follow_person.py)**: Uses YOLO to track and follow people around.
 
 ---
@@ -78,6 +79,52 @@ python look_around.py
   * If an obstacle is detected, it turns with `bot.drive_effort(0.5, -0.5)`.
   * Annotates and writes output video frames to `annotated_output.mp4`.
 * **Stopping**: Press `Ctrl+C` in the terminal. The `finally:` block will automatically call `bot.drive_stop()` to cut power to the motors and release camera and video writer resources cleanly.
+
+---
+
+### Voice Control: `voice_control.py`
+
+[`voice_control.py`](voice_control.py) listens on the host microphone, transcribes speech offline with [Vosk](https://alphacephei.com/vosk/), and performs robot actions for recognized commands. Commands are matched case-insensitively in the `COMMANDS` map at the top of the script:
+
+| Spoken command | Action | Wire command sent |
+| :--- | :--- | :--- |
+| **"Red Light"** | Stop the motors | `DRIVE,STOP` |
+| **"Green Light"** | Drive forward | `DRIVE,EFFORT,0.5,0.5` |
+
+Add more commands by adding entries to the `COMMANDS` map. The feature uses only the existing stable wire commands (`DRIVE,STOP`, `DRIVE,EFFORT`), so no robot-side changes are required.
+
+**Setup (Jetson Orin Nano / JetPack):**
+
+Requires PortAudio - install as an operating system package.
+
+```bash
+# Note: JetPack's root filesystem is read-only. Keep the venv and model on a
+# writable partition (e.g., your home directory).
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# Download and unzip the small English Vosk model (~40 MB, real-time on the Orin Nano)
+wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
+unzip vosk-model-small-en-us-0.15.zip
+```
+
+**Run:**
+
+```bash
+# Activate virtual environment
+source .venv/bin/activate
+
+# Launch the voice listener
+python voice_control.py
+```
+
+* **Behavior**:
+  * Captures 16 kHz mono audio from the default input device.
+  * When Vosk detects the end of an utterance, it is matched against the `COMMANDS` map and the matching action is executed.
+  * Unrecognized utterances are printed and ignored.
+* **Stopping**: Press `Ctrl+C` in the terminal. The `finally:` block calls `bot.drive_stop()` and closes the audio stream.
+* **Model**: Set `VOSK_MODEL` to point at a different model directory if needed (e.g., `vosk-model-en-us-0.22` for higher accuracy).
 
 ---
 
