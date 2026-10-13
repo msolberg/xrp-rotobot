@@ -3,7 +3,7 @@ import sys
 import cv2
 import time
 from ultralytics import YOLO
-from usb_controller import XRPController
+from xrp_usb_controller import XRPController
 
 DEBUG = False
 FRAMES_PER_LOOP = 3 # Set this to slow down the video.

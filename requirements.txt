@@ -4,3 +4,4 @@ sounddevice>=0.4.6
 vosk>=0.3.45
 opencv-python>=4.8
 ultralytics>=8.0
+xrp_usb_controller

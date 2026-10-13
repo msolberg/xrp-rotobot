@@ -4,10 +4,8 @@ This is my project to control an [XRP Robot](https://introtoroboticsv2.readthedo
 
 ## USB Remote Control Architecture
 
-The repository provides a client-server architecture for controlling the XRP robot from a host computer (e.g., PC or SBC) over USB serial:
+The repository provides examples for controlling the XRP robot from a host computer (e.g., PC or SBC) over USB serial. It depends on the [xrp-usb-controller](https://github.com/msolberg/xrp-usb-controller) module.
 
-* **[`usb_control.py`](usb_control.py)**: MicroPython RPC server running on the robot's RP2040 microcontroller. It asynchronously listens on USB serial (`sys.stdin`) for commands and drives the motors, reads the ultrasonic rangefinder/IMU, controls servos, and toggles LEDs.
-* **[`usb_controller.py`](usb_controller.py)**: Host-side Python library providing the `XRPController` client class. It manages serial connectivity (`/dev/ttyACM0`), handshakes on connect, flushes stale buffers, and sends commands with automatic response handling.
 * **[`look_around.py`](look_around.py)**: Example autonomous application combining computer vision (YOLO) with robot motion control via `XRPController`.
 * **[`voice_control.py`](voice_control.py)**: Host-side voice listener that transcribes microphone audio with [Vosk](https://alphacephei.com/vosk/) and maps recognized commands to robot actions (e.g., "Red Light" stops, "Green Light" drives forward) via `XRPController`.
 * **[`follow_person.py`](follow_person.py)**: Uses YOLO to track and follow people around.
@@ -16,49 +14,15 @@ The repository provides a client-server architecture for controlling the XRP rob
 
 ### Deploying the Controller to the Robot
 
-1. **Install [`usb_control.py`](usb_control.py) as the robot's boot script:**
+1. **Install [`usb_control.py`](https://github.com/msolberg/xrp-usb-controller/blob/main/src/xrp_usb_controller/usb_control.py) as the robot's boot script:**
    ```bash
    # Copy usb_control.py to the Pico as main.py so it starts automatically
+   curl https://github.com/msolberg/xrp-usb-controller/blob/main/src/xrp_usb_controller/usb_control.py -o usb_control.py
    mpremote cp usb_control.py :main.py
 
    # Soft-reboot the board to start the service
    mpremote reset
    ```   
-2. **Run the [`usb_controller.py`](usb_controller.py) script interactively to test connectivity:**
-   ```bash
-   # Activate virtual environment
-   source .venv/bin/activate
-   
-   # Launch the vision & navigation script
-   python usb_controller.py
-   ```
-
----
-
-### Using `XRPController` in Python Scripts
-
-Import [`XRPController`](usb_controller.py) and use it as a context manager:
-
-```python
-from usb_controller import XRPController
-
-# Connects to /dev/ttyACM0 by default and performs a handshake
-with XRPController() as bot:
-    # 1. Check distance with ultrasonic rangefinder (returns cm as float, or None)
-    distance = bot.read_rangefinder()
-    print(f"Obstacle distance: {distance} cm")
-
-    # 2. Drive motors (-1.0 to 1.0 effort for left and right wheels)
-    bot.drive_effort(0.5, 0.5)
-
-    # 3. Stop drivetrain motors
-    bot.drive_stop()
-
-    # 4. Control LEDs or servos
-    bot.set_rgb(0, 255, 0)
-    bot.set_servo(1, 90.0)
-```
-
 ---
 
 ### Example: Running `look_around.py`
@@ -67,7 +31,9 @@ with XRPController() as bot:
 
 ```bash
 # Activate virtual environment
+python3 -m venv .venv
 source .venv/bin/activate
+pip install -r requirements.txt
 
 # Launch the vision & navigation script
 python look_around.py
@@ -113,7 +79,9 @@ unzip vosk-model-small-en-us-0.15.zip
 
 ```bash
 # Activate virtual environment
+python3 -m venv .venv
 source .venv/bin/activate
+pip install -r requirements.txt
 
 # Launch the voice listener
 python voice_control.py

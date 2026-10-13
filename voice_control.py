@@ -5,7 +5,7 @@ import sys
 
 import sounddevice as sd
 from vosk import Model, KaldiRecognizer
-from usb_controller import XRPController
+from xrp_usb_controller import XRPController
 
 # Voice commands and the actions they trigger (matched case-insensitively)
 COMMANDS = {
